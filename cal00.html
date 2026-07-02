@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>เครื่องคิดเลขสไตล์มินิมอล</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f5f5f7;
+        }
+
+        .calculator {
+            background-color: #000000;
+            padding: 20px;
+            border-radius: 30px;
+            box-shadow: 0px 20px 40px rgba(0,0,0,0.15);
+            width: 320px;
+        }
+
+        .display-container {
+            padding: 20px 10px;
+            text-align: right;
+        }
+
+        #display {
+            width: 100%;
+            height: 70px;
+            background: transparent;
+            color: #ffffff;
+            font-size: 48px;
+            font-weight: 300;
+            text-align: right;
+            border: none;
+            outline: none;
+        }
+
+        .buttons {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+        }
+
+        button {
+            aspect-ratio: 1;
+            font-size: 24px;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: filter 0.1s ease, transform 0.05s ease;
+            font-weight: 500;
+        }
+
+        button:active {
+            transform: scale(0.92);
+        }
+
+        button:hover {
+            filter: brightness(1.2);
+        }
+
+        /* กลุ่มตัวเลข */
+        .btn-number {
+            background-color: #333333;
+            color: #ffffff;
+        }
+
+        /* กลุ่มเครื่องหมาย */
+        .btn-operator {
+            background-color: #ff9f0a;
+            color: #ffffff;
+            font-size: 28px;
+        }
+
+        /* กลุ่มฟังก์ชันพิเศษ */
+        .btn-function {
+            background-color: #a5a5a5;
+            color: #000000;
+        }
+
+        /* ปุ่มเลข 0 แนวนอนยาว */
+        .btn-zero {
+            grid-column: span 2;
+            border-radius: 40px;
+            aspect-ratio: auto;
+            padding-left: 25px;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+
+<div class="calculator">
+    <div class="display-container">
+        <input type="text" id="display" value="0" readonly>
+    </div>
+    <div class="buttons">
+        <button class="btn-function" onclick="clearDisplay()">AC</button>
+        <button class="btn-function" onclick="deleteLast()">+/-</button>
+        <button class="btn-function" onclick="appendValue('%')">%</button>
+        <button class="btn-operator" onclick="appendValue('/')">÷</button>
+        
+        <button class="btn-number" onclick="appendValue('7')">7</button>
+        <button class="btn-number" onclick="appendValue('8')">8</button>
+        <button class="btn-number" onclick="appendValue('9')">9</button>
+        <button class="btn-operator" onclick="appendValue('*')">×</button>
+        
+        <button class="btn-number" onclick="appendValue('4')">4</button>
+        <button class="btn-number" onclick="appendValue('5')">5</button>
+        <button class="btn-number" onclick="appendValue('6')">6</button>
+        <button class="btn-operator" onclick="appendValue('-')">-</button>
+        
+        <button class="btn-number" onclick="appendValue('1')">1</button>
+        <button class="btn-number" onclick="appendValue('2')">2</button>
+        <button class="btn-number" onclick="appendValue('3')">3</button>
+        <button class="btn-operator" onclick="appendValue('+')">+</button>
+        
+        <button class="btn-number btn-zero" onclick="appendValue('0')">0</button>
+        <button class="btn-number" onclick="appendValue('.')">.</button>
+        <button class="btn-operator" onclick="calculate()">=</button>
+    </div>
+</div>
+
+<script>
+    const display = document.getElementById('display');
+    let isReset = false;
+
+    function appendValue(val) {
+        // ถ้าหน้าจอเป็น 0 หรือเพิ่งคำนวณเสร็จ ให้เริ่มพิมพ์ใหม่
+        if (display.value === '0' && val !== '.' || isReset) {
+            display.value = val;
+            isReset = false;
+        } else {
+            // ป้องกันการพิมพ์จุดทศนิยมซ้ำในชุดตัวเลขเดียวกัน
+            if (val === '.' && display.value.includes('.')) {
+                const parts = display.value.split(/[\+\-\*\/]/);
+                if (parts[parts.length - 1].includes('.')) return;
+            }
+            display.value += val;
+        }
+    }
+
+    function clearDisplay() {
+        display.value = '0';
+    }
+
+    function deleteLast() {
+        // ฟังก์ชันลบตัวเลขทีละหลัก หรือ สลับค่าบวกลบ
+        if (display.value !== '0' && display.value !== 'Error') {
+            if (display.value.startsWith('-')) {
+                display.value = display.value.slice(1);
+            } else {
+                display.value = '-' + display.value;
+            }
+        }
+    }
+
+    function calculate() {
+        try {
+            // แปลงเปอร์เซ็นต์ให้คำนวณได้ก่อนประมวลผล
+            let expression = display.value.replace(/%/g, '/100');
+            
+            // คำนวณผลลัพธ์ ป้องกันทศนิยมยาวเกินไปด้วย toFixed
+            let result = eval(expression);
+            
+            if (!isFinite(result)) {
+                display.value = 'Error';
+            } else {
+                // ปัดเศษทศนิยมไม่ให้ล้นหน้าจอ (สูงสุด 8 ตำแหน่งหากมี)
+                display.value = Number(result.toFixed(8)).toString();
+            }
+            isReset = true;
+        } catch (error) {
+            display.value = 'Error';
+            isReset = true;
+        }
+    }
+</script>
+
+</body>
+</html>
