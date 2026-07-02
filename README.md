@@ -1,164 +1,51 @@
-﻿import tkinter as tk
-from tkinter import ttk
-import serial
-import serial.tools.list_ports  # ดึงมาใช้สแกนพอร์ต COM อัตโนมัติ
+# 🧮 Modern Calculator App (โปรแกรมเครื่องคิดเลขสไตล์มินิมอล)
 
-class ESP32App:
-    def __init__(self, root):
-        self.root = root
-        self.root.title("ESP32 Advanced Control (Wi-Fi + BT)")
-        self.root.geometry("450x550")
-        self.root.configure(bg="#f0f0f0")
+โปรแกรมเครื่องคิดเลขอินเตอร์เฟซสวยงาม ทันสมัยสไตล์มินิมอล (Dark Mode) รองรับการใช้งานใน 2 รูปแบบ คือ หน้าเว็บ (HTML/CSS/JS) และแอปพลิเคชันหน้าต่างบนคอมพิวเตอร์ (Python GUI) สามารถคำนวณผลลัพธ์ได้อย่างถูกต้อง แม่นยำ และมีระบบป้องกันข้อผิดพลาดทางคณิตศาสตร์
 
-        self.ser = None
+---
 
-        # --- 🔌 ส่วนเลือกพอร์ต COM (สาย USB & บลูทูธ) ---
-        self.port_frame = tk.LabelFrame(root, text=" Connection Settings ", font=("Arial", 10, "bold"), bg="#f0f0f0", padx=10, pady=10) # Changed px to padx
-        self.port_frame.pack(pady=15, fill="x", padx=20)
+## ✨ ฟีเจอร์เด่น (Features)
 
-        self.port_label = tk.Label(self.port_frame, text="Select COM Port:", font=("Arial", 10), bg="#f0f0f0")
-        self.port_label.grid(row=0, column=0, padx=5, pady=5, sticky="w")
+- **ดีไซน์มินิมอลพรีเมียม**: ออกแบบในโทนดาร์กโหมด (Dark Mode) สไตล์ iOS สะอาดตาและใช้งานง่าย
+- **ระบบคำนวณพื้นฐาน**: รองรับการ บวก (+), ลบ (-), คูณ (×), และหาร (÷)
+- **ฟังก์ชันพิเศษ**:
+  - `AC` / `C` : ล้างหน้าจอเพื่อเริ่มคำนวณใหม่ (Clear)
+  - `+/-` / `±` : สลับค่าตัวเลขระหว่างจำนวนบวกและจำนวนลบ
+  - `%` : ฟังก์ชันคิดเปอร์เซ็นต์ (หารด้วย 100 อัตโนมัติ)
+- **ระบบปัดเศษอัตโนมัติ**: ป้องกันปัญหาทศนิยมยาวเกินไป โดยจะปัดเศษให้อัตโนมัติสูงสุด 8 ตำแหน่งเพื่อไม่ให้ตัวเลขล้นหน้าจอ
+- **ระบบจัดการข้อผิดพลาด (Error Handling)**: แสดงคำว่า `Error` แจ้งเตือนทันทีเมื่อมีการคำนวณที่ผิดเงื่อนไขทางคณิตศาสตร์ (เช่น การหารด้วยเลขศูนย์)
 
-        # ช่อง Combobox สำหรับเลือกพอร์ต
-        self.port_combobox = ttk.Combobox(self.port_frame, font=("Arial", 10), width=15, state="readonly")
-        self.port_combobox.grid(row=0, column=1, padx=5, pady=5)
-        
-        # ปุ่มกดเชื่อมต่อ และ ปุ่มสแกนพอร์ตใหม่
-        self.btn_connect = tk.Button(self.port_frame, text="Connect", font=("Arial", 10, "bold"), bg="#3498db", fg="white", width=10, command=self.toggle_connection)
-        self.btn_connect.grid(row=0, column=2, padx=5, pady=5)
+---
 
-        self.btn_refresh = tk.Button(self.port_frame, text="🔄 Refresh", font=("Arial", 9), bg="#bdc3c7", width=8, command=self.refresh_ports)
-        self.btn_refresh.grid(row=0, column=3, padx=5, pady=5)
+## 🛠️ วิธีการติดตั้งและใช้งาน (Setup & Usage)
 
-        # --- ส่วนแสดงสถานะและข้อมูล ---
-        self.ip_label = tk.Label(root, text="ESP32 IP: Not Connected", font=("Arial", 12), bg="#f0f0f0")
-        self.ip_label.pack(pady=10)
+คุณสามารถเลือกใช้งานรูปแบบใดรูปแบบหนึ่งได้ตามความต้องการ:
 
-        self.status_title = tk.Label(root, text="Current Status", font=("Arial", 14, "bold"), bg="#f0f0f0")
-        self.status_title.pack(pady=5)
+### 🌐 1. รูปแบบหน้าเว็บ (Webpage - HTML/CSS/JS)
+ใช้งานได้ทันทีโดยไม่ต้องติดตั้งโปรแกรมใดๆ เพิ่มเติม
+1. คัดลอกโค้ดฝั่งหน้าเว็บไปวางในโปรแกรม Text Editor (เช่น VS Code, Notepad)
+2. บันทึกชื่อไฟล์ว่า `calculator.html`
+3. ดับเบิ้ลคลิกที่ไฟล์เพื่อเปิดใช้งานผ่านเว็บเบราว์เซอร์ (Google Chrome, Safari, Edge) ได้ทันที
 
-        self.status_var = tk.StringVar(value="DISCONNECTED")
-        self.status_display = tk.Label(
-            root, textvariable=self.status_var, font=("Arial", 24, "bold"), 
-            bg="#7f8c8d", fg="white", width=14, height=1, relief="groove"
-        )
-        self.status_display.pack(pady=10)
+### 🐍 2. รูปแบบโปรแกรมคอมพิวเตอร์ (Python GUI)
+ต้องการระบบที่มี **Python 3.x** ติดตั้งอยู่บนเครื่องคอมพิวเตอร์
+1. บันทึกโค้ด Python ไว้ในไฟล์ชื่อ `calculator.py`
+2. เปิด Terminal หรือ Command Prompt แล้วย้ายตำแหน่ง (CD) ไปยังโฟลเดอร์ที่เก็บไฟล์
+3. รันโปรแกรมด้วยคำสั่ง:
+   ```bash
+   python calculator.py
+   ```
 
-        # --- ส่วนปุ่มควบคุม (ส่งข้อมูลเข้า ESP32) ---
-        self.control_title = tk.Label(root, text="Python UI Control (via BT/USB)", font=("Arial", 12, "bold"), bg="#f0f0f0")
-        self.control_title.pack(pady=10)
+---
 
-        self.btn_on = tk.Button(root, text="ON (Send '1')", font=("Arial", 12, "bold"), bg="#27ae60", fg="white", width=18, command=self.send_on, state="disabled")
-        self.btn_on.pack(pady=5)
+## 📂 โครงสร้างและเทคโนโลยีที่ใช้ (Tech Stack)
 
-        self.btn_off = tk.Button(root, text="OFF (Send '0')", font=("Arial", 12, "bold"), bg="#e74c3c", fg="white", width=18, command=self.send_off, state="disabled")
-        self.btn_off.pack(pady=5)
+- **Web Version**: HTML5, CSS3 (Grid Layout, Flexbox), JavaScript (Vanilla JS)
+- **Python Version**: Python 3, Tkinter (ไลบรารีมาตรฐานสำหรับสร้าง UI หน้าต่าง Windows)
+- **Logic**: ใช้ฟังก์ชันการประมวลผลสตริงทางคณิตศาสตร์ ร่วมกับการควบคุมข้อผิดพลาด (Try-Catch / Try-Except)
 
-        # สแกนหาพอร์ต COM ทันทีที่เปิดโปรแกรม
-        self.refresh_ports()
-        
-        # เริ่มต้นลูปตรวจจับข้อมูล
-        self.update_data()
+---
 
-    # ฟังก์ชันสแกนพอร์ต COM ทั้งหมดในคอมพิวเตอร์
-    def refresh_ports(self):
-        ports = serial.tools.list_ports.comports()
-        port_list = [port.device for port in ports]
-        self.port_combobox['values'] = port_list
-        if port_list:
-            self.port_combobox.current(0)
-        else:
-            self.port_combobox.set("No COM Port")
+## 📝 ไลเซนส์ (License)
 
-    # ฟังก์ชันสลับการเชื่อมต่อ (Connect / Disconnect)
-    def toggle_connection(self):
-        if self.ser is None:  # ถ้ายังไม่ได้เชื่อมต่อ -> ให้ทำการเชื่อมต่อ
-            selected_port = self.port_combobox.get()
-            if selected_port == "No COM Port" or not selected_port:
-                self.status_var.set("SELECT PORT!")
-                return
-            
-            try:
-                self.ser = serial.Serial(selected_port, 115200, timeout=0.5)
-                print(f"Connected to {selected_port}")
-                self.status_var.set("CONNECTED")
-                self.status_display.config(bg="#95a5a6")
-                self.btn_connect.config(text="Disconnect", bg="#e67e22")
-                self.btn_on.config(state="normal")
-                self.btn_off.config(state="normal")
-                self.port_combobox.config(state="disabled")
-                self.btn_refresh.config(state="disabled")
-            except Exception as e:
-                print(f"Error connecting to Port: {e}")
-                self.status_var.set("CONN FAILED")
-                self.ser = None
-        else:  # ถ้าเชื่อมต่ออยู่แล้ว -> ให้ตัดการเชื่อมต่อ
-            self.disconnect_serial()
-
-    def disconnect_serial(self):
-        if self.ser:
-            try:
-                self.ser.close()
-            except:
-                pass
-            self.ser = None
-        print("Disconnected")
-        self.status_var.set("DISCONNECTED")
-        self.status_display.config(bg="#7f8c8d")
-        self.ip_label.config(text="ESP32 IP: Not Connected")
-        self.btn_connect.config(text="Connect", bg="#3498db")
-        self.btn_on.config(state="disabled")
-        self.btn_off.config(state="disabled")
-        self.port_combobox.config(state="readonly")
-        self.btn_refresh.config(state="normal")
-
-    def send_on(self):
-        if self.ser and self.ser.is_open:
-            try:
-                self.ser.write(b'1')
-                print("Sent to ESP32: '1'")
-            except Exception as e:
-                print(f"Write error: {e}")
-                self.disconnect_serial()
-
-    def send_off(self):
-        if self.ser and self.ser.is_open:
-            try:
-                self.ser.write(b'0')
-                print("Sent to ESP32: '0'")
-            except Exception as e:
-                print(f"Write error: {e}")
-                self.disconnect_serial()
-
-    def update_data(self):
-        if self.ser and self.ser.is_open:
-            try:
-                if self.ser.in_waiting > 0:
-                    line = self.ser.readline().decode('utf-8').strip()
-                    if line:
-                        print(f"Received: '{line}'")
-                        if line.startswith("IP:"):
-                            self.ip_label.config(text=f"ESP32 IP: {line.split(':')[1]}")
-                        elif line == "STATUS:ON":
-                            self.status_var.set("ON")
-                            self.status_display.config(bg="#27ae60")
-                        elif line == "STATUS:OFF":
-                            self.status_var.set("OFF")
-                            self.status_display.config(bg="#e74c3c")
-            except Exception as e:
-                print(f"Error reading data: {e}")
-                self.disconnect_serial()
-
-        self.root.after(50, self.update_data)
-
-    def __del__(self):
-        if hasattr(self, 'ser') and self.ser:
-            try:
-                self.ser.close()
-            except:
-                pass
-
-if __name__ == "__main__":
-    root = tk.Tk()
-    app = ESP32App(root)
-    root.mainloop()
+โปรเจกต์นี้เปิดให้ใช้งาน แจกจ่าย และพัฒนาต่อยอดได้อย่างอิสระภายใต้ [MIT License](https://opensource.org)
